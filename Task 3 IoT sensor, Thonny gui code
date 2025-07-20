@@ -1,0 +1,42 @@
+import requests
+import matplotlib.pyplot as plt
+
+CHANNEL_ID = "3000578"
+READ_API_KEY = ""  # Leave empty unless the channel is private
+NUM_RESULTS = 20
+
+url = f"https://api.thingspeak.com/channels/{CHANNEL_ID}/feeds.json?results={NUM_RESULTS}"
+
+response = requests.get(url)
+
+# Try to parse JSON safely
+try:
+    data = response.json()
+except Exception as e:
+    print("❌ Failed to parse JSON:", e)
+    print("Raw response from ThingSpeak:", response.text)
+    exit()
+
+# Print raw and parsed response for debug
+print("📡 Raw response text:", response.text)
+print("✅ Parsed JSON:", data)
+
+# Check for error
+if isinstance(data, int) or data in [0, -1]:
+    print("⚠️ ThingSpeak returned error — likely hit rate limit, wrong URL, or private channel.")
+    exit()
+
+# Extract the sensor data
+feeds = data["feeds"]
+values = [int(f["field1"]) if f["field1"] else 0 for f in feeds]
+timestamps = [f["created_at"] for f in feeds]
+
+# Plot the results
+plt.plot(timestamps, values, marker='o')
+plt.xticks(rotation=45)
+plt.title("Sensor Data from ThingSpeak")
+plt.xlabel("Time")
+plt.ylabel("Sensor Value")
+plt.tight_layout()
+plt.grid(True)
+plt.show()
